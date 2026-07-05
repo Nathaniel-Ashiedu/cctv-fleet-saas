@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import SiteDetail from "./pages/SiteDetail";
 
 function isLoggedIn() {
   return !!localStorage.getItem("token");
@@ -22,6 +23,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sites/:siteId"
+          element={
+            <ProtectedRoute>
+              <SiteDetail />
             </ProtectedRoute>
           }
         />
