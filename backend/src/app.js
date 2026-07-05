@@ -3,6 +3,7 @@ require("dotenv").config();
 const db = require("./config/db");
 const authRoutes = require("./routes/auth");
 const sitesRoutes = require("./routes/sites");
+const devicesRoutes = require("./routes/devices");
 const { requireAuth } = require("./middleware/auth");
 
 const app = express();
@@ -26,6 +27,7 @@ app.get("/health/db", async function (req, res) {
 
 app.use("/auth", authRoutes);
 app.use("/sites", sitesRoutes);
+app.use("/devices", devicesRoutes);
 
 app.get("/me", requireAuth, function (req, res) {
   res.json({ status: "ok", user: req.user });
