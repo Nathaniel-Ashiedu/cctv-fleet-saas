@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
 
-const statusColors = {
-  online: "#2e7d32",
-  offline: "#c62828",
-  unknown: "#999",
-};
+function StatusBadge({ status }) {
+  return (
+    <span className={`status-badge status-${status}`}>
+      <span className="status-dot"></span>
+      {status}
+    </span>
+  );
+}
 
 function SiteDetail() {
   const { siteId } = useParams();
@@ -19,12 +22,9 @@ function SiteDetail() {
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(
-    function () {
-      fetchDevices();
-    },
-    [siteId]
-  );
+  useEffect(function () {
+    fetchDevices();
+  }, [siteId]);
 
   async function fetchDevices() {
     setLoading(true);
@@ -49,12 +49,7 @@ function SiteDetail() {
     setCreating(true);
     setError("");
     try {
-      await apiClient.post("/devices", {
-        siteId: siteId,
-        name: newName,
-        ipAddress: newIp,
-        type: newType,
-      });
+      await apiClient.post("/devices", { siteId: siteId, name: newName, ipAddress: newIp, type: newType });
       setNewName("");
       setNewIp("");
       setNewType("camera");
@@ -67,79 +62,53 @@ function SiteDetail() {
   }
 
   return (
-    <div style={{ maxWidth: 700, margin: "60px auto", fontFamily: "sans-serif" }}>
-      <Link to="/dashboard">← Back to sites</Link>
+    <div className="page">
+      <Link to="/dashboard" className="back-link">← Back to sites</Link>
       <h1>Devices</h1>
+      <p className="subtext">{devices.length} device{devices.length === 1 ? "" : "s"} at this site</p>
 
-      <form onSubmit={handleAddDevice} style={{ margin: "24px 0", padding: 16, border: "1px solid #ccc", borderRadius: 8 }}>
-        <h3 style={{ marginTop: 0 }}>Add a new device</h3>
-        <div style={{ marginBottom: 8 }}>
-          <input
-            type="text"
-            placeholder="Device name (e.g. Front Gate Cam)"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 8 }}>
-          <input
-            type="text"
-            placeholder="IP address (e.g. 192.168.1.50)"
-            value={newIp}
-            onChange={(e) => setNewIp(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 8 }}>
-          <select value={newType} onChange={(e) => setNewType(e.target.value)} style={{ width: "100%", padding: 8 }}>
-            <option value="camera">Camera</option>
-            <option value="nvr">NVR</option>
-            <option value="sensor">Sensor</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <button type="submit" disabled={creating}>
-          {creating ? "Adding..." : "Add device"}
-        </button>
-      </form>
+      <div className="panel">
+        <h3 style={{ marginBottom: 16 }}>Add a device</h3>
+        <form onSubmit={handleAddDevice}>
+          <div className="field">
+            <label>Device name</label>
+            <input type="text" placeholder="Front Gate Cam" value={newName} onChange={(e) => setNewName(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label>IP address</label>
+            <input type="text" placeholder="192.168.1.50" value={newIp} onChange={(e) => setNewIp(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label>Type</label>
+            <select value={newType} onChange={(e) => setNewType(e.target.value)}>
+              <option value="camera">Camera</option>
+              <option value="nvr">NVR</option>
+              <option value="sensor">Sensor</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={creating}>
+            {creating ? "Adding..." : "Add device"}
+          </button>
+        </form>
+      </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {loading ? (
-        <p>Loading devices...</p>
+        <p className="empty-state">Loading devices...</p>
       ) : devices.length === 0 ? (
-        <p>No devices yet — add one above to get started.</p>
+        <p className="empty-state">No devices yet. Add one above to start tracking health.</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <ul className="card-list">
           {devices.map(function (device) {
             return (
-              <li
-                key={device.id}
-                style={{ padding: 12, border: "1px solid #eee", borderRadius: 8, marginBottom: 8 }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Link to={`/devices/${device.id}`} style={{ fontSize: 16, fontWeight: "bold", textDecoration: "none" }}>
-                    {device.name}
-                  </Link>
-                  <span
-                    style={{
-                      color: "white",
-                      background: statusColors[device.status] || statusColors.unknown,
-                      padding: "2px 10px",
-                      borderRadius: 12,
-                      fontSize: 12,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {device.status}
-                  </span>
+              <li key={device.id} className="card">
+                <div className="card-row">
+                  <Link to={`/devices/${device.id}`} className="card-link">{device.name}</Link>
+                  <StatusBadge status={device.status} />
                 </div>
-                <p style={{ margin: "4px 0 0", color: "#666" }}>
-                  {device.ip_address} · {device.type}
-                </p>
+                <p className="card-meta">{device.ip_address} · {device.type}</p>
               </li>
             );
           })}

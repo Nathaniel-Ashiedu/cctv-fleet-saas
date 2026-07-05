@@ -55,56 +55,45 @@ function Dashboard() {
   }
 
   return (
-    <div style={{ maxWidth: 700, margin: "60px auto", fontFamily: "sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Your Sites</h1>
-        <button onClick={handleLogout}>Log out</button>
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1>Sites</h1>
+          <p className="subtext">{sites.length} site{sites.length === 1 ? "" : "s"} under management</p>
+        </div>
+        <button className="btn btn-ghost" onClick={handleLogout}>Log out</button>
       </div>
 
-      <form onSubmit={handleAddSite} style={{ margin: "24px 0", padding: 16, border: "1px solid #ccc", borderRadius: 8 }}>
-        <h3 style={{ marginTop: 0 }}>Add a new site</h3>
-        <div style={{ marginBottom: 8 }}>
-          <input
-            type="text"
-            placeholder="Site name (e.g. Accra HQ)"
-            value={newSiteName}
-            onChange={(e) => setNewSiteName(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 8 }}>
-          <input
-            type="text"
-            placeholder="Address (optional)"
-            value={newSiteAddress}
-            onChange={(e) => setNewSiteAddress(e.target.value)}
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <button type="submit" disabled={creating}>
-          {creating ? "Adding..." : "Add site"}
-        </button>
-      </form>
+      <div className="panel">
+        <h3 style={{ marginBottom: 16 }}>Add a site</h3>
+        <form onSubmit={handleAddSite}>
+          <div className="field">
+            <label>Site name</label>
+            <input type="text" placeholder="Accra HQ" value={newSiteName} onChange={(e) => setNewSiteName(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label>Address (optional)</label>
+            <input type="text" placeholder="Osu, Accra" value={newSiteAddress} onChange={(e) => setNewSiteAddress(e.target.value)} />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={creating}>
+            {creating ? "Adding..." : "Add site"}
+          </button>
+        </form>
+      </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {loading ? (
-        <p>Loading sites...</p>
+        <p className="empty-state">Loading sites...</p>
       ) : sites.length === 0 ? (
-        <p>No sites yet — add one above to get started.</p>
+        <p className="empty-state">No sites yet. Add one above to start monitoring devices.</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <ul className="card-list">
           {sites.map(function (site) {
             return (
-              <li
-                key={site.id}
-                style={{ padding: 12, border: "1px solid #eee", borderRadius: 8, marginBottom: 8 }}
-              >
-                <Link to={`/sites/${site.id}`} style={{ fontSize: 18, fontWeight: "bold", textDecoration: "none" }}>
-                  {site.name}
-                </Link>
-                {site.address && <p style={{ margin: "4px 0 0", color: "#666" }}>{site.address}</p>}
+              <li key={site.id} className="card">
+                <Link to={`/sites/${site.id}`} className="card-link">{site.name}</Link>
+                {site.address && <p className="card-meta">{site.address}</p>}
               </li>
             );
           })}

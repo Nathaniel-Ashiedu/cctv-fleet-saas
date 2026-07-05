@@ -13,7 +13,6 @@ function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       const response = await apiClient.post("/auth/login", { email, password });
       localStorage.setItem("token", response.data.token);
@@ -26,36 +25,25 @@ function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "80px auto", fontFamily: "sans-serif" }}>
+    <div className="auth-page">
       <h1>Log in</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
+      <p className="subtext">Fleet console access</p>
+      <form onSubmit={handleSubmit} style={{ marginTop: 28 }}>
+        <div className="field">
           <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div className="field">
           <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ width: "100%", padding: 10 }}>
+        {error && <p className="error-text">{error}</p>}
+        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%" }}>
           {loading ? "Logging in..." : "Log in"}
         </button>
       </form>
-      <p style={{ marginTop: 16 }}>
-        Don't have an account? <Link to="/signup">Sign up</Link>
+      <p className="subtext" style={{ marginTop: 20 }}>
+        No account? <Link to="/signup">Sign up</Link>
       </p>
     </div>
   );
