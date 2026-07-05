@@ -143,5 +143,27 @@ router.delete("/:id", async function (req, res) {
     res.status(500).json({ error: "Failed to delete device", message: err.message });
   }
 });
+// GET /devices/:id/health — health log history for one device (tenant-scoped)
+router.get("/:id/health", async function (req, res) {
+  try {
+    const deviceCheck = await db.query(
+      `SELECT d.id FROM devices d JOIN sites s ON s.id = d.site_id WHERE d.id = $1 AND s.org_id = $2`,
+      [req.params.id, req.orgId]
+    );
+    if (deviceCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    const result = await db.query(
+      `SELECT id, checked_at, status, storage_used_pct, latency_ms
+       FROM health_logs WHERE device_id = $1 ORDER BY checked_at DESC LIMIT 50`,
+      [req.params.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch health logs", message: err.message });
+  }
+});
 
 module.exports = router;

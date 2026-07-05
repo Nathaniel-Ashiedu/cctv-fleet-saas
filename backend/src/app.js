@@ -5,6 +5,7 @@ const authRoutes = require("./routes/auth");
 const sitesRoutes = require("./routes/sites");
 const devicesRoutes = require("./routes/devices");
 const { requireAuth } = require("./middleware/auth");
+const { scheduleHealthChecks } = require("./jobs/deviceHealthCheck");
 
 const app = express();
 app.use(express.json());
@@ -34,6 +35,7 @@ app.get("/me", requireAuth, function (req, res) {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, function () {
+app.listen(PORT, async function () {
   console.log("Backend running on http://localhost:" + PORT);
+  await scheduleHealthChecks();
 });
