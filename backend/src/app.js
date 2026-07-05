@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 require("dotenv").config();
 const db = require("./config/db");
 const authRoutes = require("./routes/auth");
@@ -9,6 +10,8 @@ const { requireAuth } = require("./middleware/auth");
 const { scheduleHealthChecks } = require("./jobs/deviceHealthCheck");
 
 const app = express();
+
+app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
 app.get("/health", function (req, res) {
