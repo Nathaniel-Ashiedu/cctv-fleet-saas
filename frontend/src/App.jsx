@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import SiteDetail from "./pages/SiteDetail";
+import DeviceDetail from "./pages/DeviceDetail";
 
 function isLoggedIn() {
   return !!localStorage.getItem("token");
@@ -31,6 +32,14 @@ function App() {
           element={
             <ProtectedRoute>
               <SiteDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/devices/:deviceId"
+          element={
+            <ProtectedRoute>
+              <DeviceDetail />
             </ProtectedRoute>
           }
         />
