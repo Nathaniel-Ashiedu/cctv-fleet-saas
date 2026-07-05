@@ -19,7 +19,7 @@ async function getOwnedSite(siteId, orgId) {
 
 // POST /devices — create a device under a site (site must belong to this org)
 router.post("/", async function (req, res) {
-  const { siteId, name, ipAddress, type, onvifXaddr, firmwareVersion } = req.body;
+  const { siteId, name, ipAddress, type, onvifXaddr, onvifUsername, onvifPassword, firmwareVersion } = req.body;
 
   if (!siteId || !name || !ipAddress) {
     return res.status(400).json({ error: "siteId, name, and ipAddress are required" });
@@ -32,10 +32,19 @@ router.post("/", async function (req, res) {
     }
 
     const result = await db.query(
-      `INSERT INTO devices (site_id, name, ip_address, type, onvif_xaddr, firmware_version)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO devices (site_id, name, ip_address, type, onvif_xaddr, username_enc, password_enc, firmware_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, site_id, name, ip_address, type, onvif_xaddr, firmware_version, status, last_seen_at, created_at`,
-      [siteId, name, ipAddress, type || "camera", onvifXaddr || null, firmwareVersion || null]
+      [
+        siteId,
+        name,
+        ipAddress,
+        type || "camera",
+        onvifXaddr || null,
+        onvifUsername || null,
+        onvifPassword || null,
+        firmwareVersion || null,
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
