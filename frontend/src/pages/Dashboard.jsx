@@ -13,12 +13,35 @@ function Dashboard() {
   const [editName, setEditName] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+ const [deletingId, setDeletingId] = useState(null);
+  const [plan, setPlan] = useState("free");
+  const [upgrading, setUpgrading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(function () {
+ useEffect(function () {
     fetchSites();
+    fetchBillingStatus();
   }, []);
+
+  async function fetchBillingStatus() {
+    try {
+      const response = await apiClient.get("/billing/status");
+      setPlan(response.data.plan);
+    } catch (err) {
+      // Non-critical if this fails — just leave plan as default
+    }
+  }
+
+  async function handleUpgrade() {
+    setUpgrading(true);
+    try {
+      const response = await apiClient.post("/billing/create-checkout-session");
+      window.location.href = response.data.url;
+    } catch (err) {
+      setError("Failed to start checkout. Please try again.");
+      setUpgrading(false);
+    }
+  }
 
   async function fetchSites() {
     setLoading(true);
@@ -102,9 +125,18 @@ function Dashboard() {
       <div className="page-header">
         <div>
           <h1>Sites</h1>
-          <p className="subtext">{sites.length} site{sites.length === 1 ? "" : "s"} under management</p>
+          <p className="subtext">
+            {sites.length} site{sites.length === 1 ? "" : "s"} under management · plan: {plan}
+          </p>
         </div>
-        <button className="btn btn-ghost" onClick={handleLogout}>Log out</button>
+        <div style={{ display: "flex", gap: 10 }}>
+          {plan === "free" && (
+            <button className="btn btn-primary" onClick={handleUpgrade} disabled={upgrading}>
+              {upgrading ? "Redirecting..." : "Upgrade to Pro"}
+            </button>
+          )}
+          <button className="btn btn-ghost" onClick={handleLogout}>Log out</button>
+        </div>
       </div>
 
       <div className="panel">

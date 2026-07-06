@@ -6,13 +6,13 @@ const authRoutes = require("./routes/auth");
 const sitesRoutes = require("./routes/sites");
 const devicesRoutes = require("./routes/devices");
 const alertsRoutes = require("./routes/alerts");
+const billingRoutes = require("./routes/billing");
 const { requireAuth } = require("./middleware/auth");
 const { scheduleHealthChecks } = require("./jobs/deviceHealthCheck");
 
 const app = express();
 
 const allowedOrigins = ["http://localhost:5173", "https://cctv-fleet-saas.vercel.app"];
-
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -24,6 +24,9 @@ app.use(
     },
   })
 );
+
+// Stripe webhook needs the RAW body, so it's mounted before express.json()
+app.use("/billing", billingRoutes);
 app.use(express.json());
 
 app.get("/health", function (req, res) {
