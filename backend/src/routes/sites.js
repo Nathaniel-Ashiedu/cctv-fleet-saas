@@ -2,14 +2,14 @@ const express = require("express");
 const db = require("../config/db");
 const { requireAuth } = require("../middleware/auth");
 const { scopeToOrg } = require("../middleware/tenantScope");
-
+const { requireRole } = require("../middleware/requireRole");
 const router = express.Router();
 
 // All routes below require a valid JWT AND org scoping
 router.use(requireAuth, scopeToOrg);
 
 // POST /sites — create a new site under the logged-in user's org
-router.post("/", async function (req, res) {
+router.post("/", requireRole("admin", "technician"), async function (req, res) {
   const { name, address } = req.body;
 
   if (!name) {
@@ -60,7 +60,7 @@ router.get("/:id", async function (req, res) {
 });
 
 // PUT /sites/:id — update a site, only if it belongs to this org
-router.put("/:id", async function (req, res) {
+router.put("/:id", requireRole("admin", "technician"), async function (req, res) {
   const { name, address } = req.body;
 
   try {
@@ -79,7 +79,7 @@ router.put("/:id", async function (req, res) {
 });
 
 // DELETE /sites/:id — delete a site, only if it belongs to this org
-router.delete("/:id", async function (req, res) {
+router.delete("/:id", requireRole("admin"), async function (req, res) {
   try {
     const result = await db.query(
       "DELETE FROM sites WHERE id = $1 AND org_id = $2 RETURNING id",

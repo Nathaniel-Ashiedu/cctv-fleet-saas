@@ -2,23 +2,20 @@ const express = require("express");
 const db = require("../config/db");
 const { requireAuth } = require("../middleware/auth");
 const { scopeToOrg } = require("../middleware/tenantScope");
+const { requireRole } = require("../middleware/requireRole");
+const { encrypt } = require("../utils/crypto");
 
 const router = express.Router();
 
 router.use(requireAuth, scopeToOrg);
 
-// Helper: confirms a site belongs to the requesting org.
-// Returns the site row if valid, or null if not found/not owned.
 async function getOwnedSite(siteId, orgId) {
-  const result = await db.query(
-    "SELECT id FROM sites WHERE id = $1 AND org_id = $2",
-    [siteId, orgId]
-  );
+  const result = await db.query("SELECT id FROM sites WHERE id = $1 AND org_id = $2", [siteId, orgId]);
   return result.rows[0] || null;
 }
 
-// POST /devices — create a device under a site (site must belong to this org)
-router.post("/", async function (req, res) {
+// POST /devices — admins and technicians only
+router.post("/", requireRole("admin", "technician"), async function (req, res) {
   const { siteId, name, ipAddress, type, onvifXaddr, onvifUsername, onvifPassword, firmwareVersion } = req.body;
 
   if (!siteId || !name || !ipAddress) {
@@ -41,8 +38,8 @@ router.post("/", async function (req, res) {
         ipAddress,
         type || "camera",
         onvifXaddr || null,
-        onvifUsername || null,
-        onvifPassword || null,
+        encrypt(onvifUsername),
+        encrypt(onvifPassword),
         firmwareVersion || null,
       ]
     );
@@ -53,8 +50,7 @@ router.post("/", async function (req, res) {
   }
 });
 
-// GET /devices?siteId=... — list devices, optionally filtered by site.
-// Always scoped to the org via a JOIN, so no device from another org can leak through.
+// GET /devices — all roles can view
 router.get("/", async function (req, res) {
   const { siteId } = req.query;
 
@@ -63,19 +59,15 @@ router.get("/", async function (req, res) {
     if (siteId) {
       result = await db.query(
         `SELECT d.id, d.site_id, d.name, d.ip_address, d.type, d.status, d.firmware_version, d.last_seen_at, d.created_at
-         FROM devices d
-         JOIN sites s ON s.id = d.site_id
-         WHERE d.site_id = $1 AND s.org_id = $2
-         ORDER BY d.created_at DESC`,
+         FROM devices d JOIN sites s ON s.id = d.site_id
+         WHERE d.site_id = $1 AND s.org_id = $2 ORDER BY d.created_at DESC`,
         [siteId, req.orgId]
       );
     } else {
       result = await db.query(
         `SELECT d.id, d.site_id, d.name, d.ip_address, d.type, d.status, d.firmware_version, d.last_seen_at, d.created_at
-         FROM devices d
-         JOIN sites s ON s.id = d.site_id
-         WHERE s.org_id = $1
-         ORDER BY d.created_at DESC`,
+         FROM devices d JOIN sites s ON s.id = d.site_id
+         WHERE s.org_id = $1 ORDER BY d.created_at DESC`,
         [req.orgId]
       );
     }
@@ -86,13 +78,12 @@ router.get("/", async function (req, res) {
   }
 });
 
-// GET /devices/:id — get one device, only if its site belongs to this org
+// GET /devices/:id — all roles can view
 router.get("/:id", async function (req, res) {
   try {
     const result = await db.query(
       `SELECT d.id, d.site_id, d.name, d.ip_address, d.type, d.status, d.firmware_version, d.last_seen_at, d.created_at
-       FROM devices d
-       JOIN sites s ON s.id = d.site_id
+       FROM devices d JOIN sites s ON s.id = d.site_id
        WHERE d.id = $1 AND s.org_id = $2`,
       [req.params.id, req.orgId]
     );
@@ -106,8 +97,8 @@ router.get("/:id", async function (req, res) {
   }
 });
 
-// PUT /devices/:id — update a device, only if its site belongs to this org
-router.put("/:id", async function (req, res) {
+// PUT /devices/:id — admins and technicians only
+router.put("/:id", requireRole("admin", "technician"), async function (req, res) {
   const { name, ipAddress, type, firmwareVersion, status } = req.body;
 
   try {
@@ -133,12 +124,11 @@ router.put("/:id", async function (req, res) {
   }
 });
 
-// DELETE /devices/:id — delete a device, only if its site belongs to this org
-router.delete("/:id", async function (req, res) {
+// DELETE /devices/:id — admins only
+router.delete("/:id", requireRole("admin"), async function (req, res) {
   try {
     const result = await db.query(
-      `DELETE FROM devices d
-       USING sites s
+      `DELETE FROM devices d USING sites s
        WHERE d.id = $1 AND d.site_id = s.id AND s.org_id = $2
        RETURNING d.id`,
       [req.params.id, req.orgId]
@@ -152,7 +142,8 @@ router.delete("/:id", async function (req, res) {
     res.status(500).json({ error: "Failed to delete device", message: err.message });
   }
 });
-// GET /devices/:id/health — health log history for one device (tenant-scoped)
+
+// GET /devices/:id/health — all roles can view
 router.get("/:id/health", async function (req, res) {
   try {
     const deviceCheck = await db.query(
