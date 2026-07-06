@@ -19,6 +19,10 @@ function SiteDetail() {
   const [newName, setNewName] = useState("");
   const [newIp, setNewIp] = useState("");
   const [newType, setNewType] = useState("camera");
+  const [showOnvifFields, setShowOnvifFields] = useState(false);
+  const [onvifXaddr, setOnvifXaddr] = useState("");
+  const [onvifUsername, setOnvifUsername] = useState("");
+  const [onvifPassword, setOnvifPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
 
@@ -49,10 +53,22 @@ function SiteDetail() {
     setCreating(true);
     setError("");
     try {
-      await apiClient.post("/devices", { siteId: siteId, name: newName, ipAddress: newIp, type: newType });
+      await apiClient.post("/devices", {
+        siteId: siteId,
+        name: newName,
+        ipAddress: newIp,
+        type: newType,
+        onvifXaddr: onvifXaddr || undefined,
+        onvifUsername: onvifUsername || undefined,
+        onvifPassword: onvifPassword || undefined,
+      });
       setNewName("");
       setNewIp("");
       setNewType("camera");
+      setOnvifXaddr("");
+      setOnvifUsername("");
+      setOnvifPassword("");
+      setShowOnvifFields(false);
       fetchDevices();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create device.");
@@ -87,6 +103,41 @@ function SiteDetail() {
               <option value="other">Other</option>
             </select>
           </div>
+
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ marginBottom: 14 }}
+            onClick={() => setShowOnvifFields(!showOnvifFields)}
+          >
+            {showOnvifFields ? "Hide" : "Connect via ONVIF (optional)"}
+          </button>
+
+          {showOnvifFields && (
+            <>
+              <div className="field">
+                <label>ONVIF service address</label>
+                <input
+                  type="text"
+                  placeholder="http://192.168.1.50:8000/onvif/device_service"
+                  value={onvifXaddr}
+                  onChange={(e) => setOnvifXaddr(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label>ONVIF username</label>
+                <input type="text" placeholder="admin" value={onvifUsername} onChange={(e) => setOnvifUsername(e.target.value)} />
+              </div>
+              <div className="field">
+                <label>ONVIF password</label>
+                <input type="password" value={onvifPassword} onChange={(e) => setOnvifPassword(e.target.value)} />
+              </div>
+              <p className="subtext" style={{ marginBottom: 14 }}>
+                Leave blank to use simulated health data instead of a real ONVIF connection.
+              </p>
+            </>
+          )}
+
           <button type="submit" className="btn btn-primary" disabled={creating}>
             {creating ? "Adding..." : "Add device"}
           </button>
