@@ -4,6 +4,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import SiteDetail from "./pages/SiteDetail";
 import DeviceDetail from "./pages/DeviceDetail";
+import Alerts from "./pages/Alerts";
 
 function isLoggedIn() {
   return !!localStorage.getItem("token");
@@ -40,6 +41,14 @@ function App() {
           element={
             <ProtectedRoute>
               <DeviceDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/alerts"
+          element={
+            <ProtectedRoute>
+              <Alerts />
             </ProtectedRoute>
           }
         />

@@ -13,12 +13,12 @@ function Dashboard() {
   const [editName, setEditName] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [saving, setSaving] = useState(false);
- const [deletingId, setDeletingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [plan, setPlan] = useState("free");
   const [upgrading, setUpgrading] = useState(false);
   const navigate = useNavigate();
 
- useEffect(function () {
+  useEffect(function () {
     fetchSites();
     fetchBillingStatus();
   }, []);
@@ -130,6 +130,9 @@ function Dashboard() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
+          <Link to="/alerts" className="btn btn-ghost" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+            Alerts
+          </Link>
           {plan === "free" && (
             <button className="btn btn-primary" onClick={handleUpgrade} disabled={upgrading}>
               {upgrading ? "Redirecting..." : "Upgrade to Pro"}
@@ -216,4 +219,5 @@ function Dashboard() {
     </div>
   );
 }
+
 export default Dashboard;
