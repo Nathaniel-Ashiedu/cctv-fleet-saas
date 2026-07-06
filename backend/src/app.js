@@ -11,7 +11,19 @@ const { scheduleHealthChecks } = require("./jobs/deviceHealthCheck");
 
 const app = express();
 
-app.use(cors({ origin: "https://cctv-fleet-saas.vercel.app" }));
+const allowedOrigins = ["http://localhost:5173", "https://cctv-fleet-saas.vercel.app"];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+  })
+);
 app.use(express.json());
 
 app.get("/health", function (req, res) {

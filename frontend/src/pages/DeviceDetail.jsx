@@ -19,6 +19,12 @@ function DeviceDetail() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editIp, setEditIp] = useState("");
+  const [editType, setEditType] = useState("camera");
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(function () {
@@ -38,6 +44,9 @@ function DeviceDetail() {
       ]);
 
       setDevice(deviceRes.data);
+      setEditName(deviceRes.data.name);
+      setEditIp(deviceRes.data.ip_address);
+      setEditType(deviceRes.data.type);
 
       const chartData = healthRes.data.slice().reverse().map(function (log) {
         return {
@@ -64,6 +73,38 @@ function DeviceDetail() {
     }
   }
 
+  async function handleSaveEdit(e) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await apiClient.put(`/devices/${deviceId}`, {
+        name: editName,
+        ipAddress: editIp,
+        type: editType,
+      });
+      setEditing(false);
+      fetchAll();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to update device.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(`Delete "${device.name}"? This can't be undone.`);
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await apiClient.delete(`/devices/${deviceId}`);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to delete device.");
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <div className="page"><p className="empty-state">Loading device...</p></div>;
   }
@@ -83,12 +124,50 @@ function DeviceDetail() {
 
       <div className="card-row" style={{ marginTop: 4 }}>
         <h1>{device.name}</h1>
-        <StatusBadge status={device.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <StatusBadge status={device.status} />
+          <button className="btn btn-ghost" onClick={() => setEditing(!editing)}>
+            {editing ? "Cancel" : "Edit"}
+          </button>
+          <button className="btn btn-ghost" onClick={handleDelete} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
       </div>
       <p className="subtext">
         {device.ip_address} · {device.type}
         {device.last_seen_at && <> · last seen {new Date(device.last_seen_at).toLocaleString()}</>}
       </p>
+
+      {editing && (
+        <div className="panel">
+          <h3 style={{ marginBottom: 16 }}>Edit device</h3>
+          <form onSubmit={handleSaveEdit}>
+            <div className="field">
+              <label>Device name</label>
+              <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+            </div>
+            <div className="field">
+              <label>IP address</label>
+              <input type="text" value={editIp} onChange={(e) => setEditIp(e.target.value)} required />
+            </div>
+            <div className="field">
+              <label>Type</label>
+              <select value={editType} onChange={(e) => setEditType(e.target.value)}>
+                <option value="camera">Camera</option>
+                <option value="nvr">NVR</option>
+                <option value="sensor">Sensor</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "Saving..." : "Save changes"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {error && <p className="error-text">{error}</p>}
 
       <h3 style={{ marginTop: 32, marginBottom: 16 }}>Storage &amp; latency — last 50 checks</h3>
       {healthLogs.length === 0 ? (

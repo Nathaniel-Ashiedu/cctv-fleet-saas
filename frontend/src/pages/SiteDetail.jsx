@@ -24,6 +24,7 @@ function SiteDetail() {
   const [onvifUsername, setOnvifUsername] = useState("");
   const [onvifPassword, setOnvifPassword] = useState("");
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(function () {
@@ -74,6 +75,21 @@ function SiteDetail() {
       setError(err.response?.data?.error || "Failed to create device.");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleDelete(deviceId, deviceName) {
+    const confirmed = window.confirm(`Delete "${deviceName}"? This can't be undone.`);
+    if (!confirmed) return;
+
+    setDeletingId(deviceId);
+    try {
+      await apiClient.delete(`/devices/${deviceId}`);
+      fetchDevices();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to delete device.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -157,7 +173,17 @@ function SiteDetail() {
               <li key={device.id} className="card">
                 <div className="card-row">
                   <Link to={`/devices/${device.id}`} className="card-link">{device.name}</Link>
-                  <StatusBadge status={device.status} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <StatusBadge status={device.status} />
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: "4px 10px", fontSize: 12 }}
+                      onClick={() => handleDelete(device.id, device.name)}
+                      disabled={deletingId === device.id}
+                    >
+                      {deletingId === device.id ? "..." : "Delete"}
+                    </button>
+                  </div>
                 </div>
                 <p className="card-meta">{device.ip_address} · {device.type}</p>
               </li>

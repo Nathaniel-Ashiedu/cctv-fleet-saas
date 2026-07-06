@@ -9,6 +9,11 @@ function Dashboard() {
   const [newSiteName, setNewSiteName] = useState("");
   const [newSiteAddress, setNewSiteAddress] = useState("");
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(function () {
@@ -46,6 +51,44 @@ function Dashboard() {
       setError(err.response?.data?.error || "Failed to create site.");
     } finally {
       setCreating(false);
+    }
+  }
+
+  function startEdit(site) {
+    setEditingId(site.id);
+    setEditName(site.name);
+    setEditAddress(site.address || "");
+  }
+
+  async function handleSaveEdit(e, siteId) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await apiClient.put(`/sites/${siteId}`, { name: editName, address: editAddress });
+      setEditingId(null);
+      fetchSites();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to update site.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(siteId, siteName) {
+    const confirmed = window.confirm(
+      `Delete "${siteName}"? This will also delete all its devices and health history. This can't be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(siteId);
+    try {
+      await apiClient.delete(`/sites/${siteId}`);
+      fetchSites();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to delete site.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -90,10 +133,49 @@ function Dashboard() {
       ) : (
         <ul className="card-list">
           {sites.map(function (site) {
+            const isEditing = editingId === site.id;
             return (
               <li key={site.id} className="card">
-                <Link to={`/sites/${site.id}`} className="card-link">{site.name}</Link>
-                {site.address && <p className="card-meta">{site.address}</p>}
+                {isEditing ? (
+                  <form onSubmit={(e) => handleSaveEdit(e, site.id)}>
+                    <div className="field">
+                      <label>Site name</label>
+                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+                    </div>
+                    <div className="field">
+                      <label>Address</label>
+                      <input type="text" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button type="submit" className="btn btn-primary" disabled={saving}>
+                        {saving ? "Saving..." : "Save"}
+                      </button>
+                      <button type="button" className="btn btn-ghost" onClick={() => setEditingId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="card-row">
+                    <div>
+                      <Link to={`/sites/${site.id}`} className="card-link">{site.name}</Link>
+                      {site.address && <p className="card-meta">{site.address}</p>}
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => startEdit(site)}>
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        style={{ padding: "4px 10px", fontSize: 12 }}
+                        onClick={() => handleDelete(site.id, site.name)}
+                        disabled={deletingId === site.id}
+                      >
+                        {deletingId === site.id ? "..." : "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             );
           })}
@@ -102,5 +184,4 @@ function Dashboard() {
     </div>
   );
 }
-
 export default Dashboard;
