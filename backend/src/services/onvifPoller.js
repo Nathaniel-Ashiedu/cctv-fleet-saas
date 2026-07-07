@@ -45,5 +45,55 @@ function pollOnvifDevice(device) {
     );
   });
 }
+function getSnapshotUri(device) {
+  return new Promise(function (resolve, reject) {
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(device.onvif_xaddr);
+    } catch (err) {
+      reject(new Error("Invalid ONVIF address"));
+      return;
+    }
 
-module.exports = { pollOnvifDevice };
+    const cam = new onvif.Cam(
+      {
+        hostname: parsedUrl.hostname,
+        port: parsedUrl.port || 80,
+        username: device.username_enc || undefined,
+        password: device.password_enc || undefined,
+        timeout: 5000,
+      },
+      function (err) {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        this.getProfiles(function (err2, profiles) {
+          if (err2) {
+            reject(err2);
+            return;
+          }
+          if (!profiles || profiles.length === 0) {
+            reject(new Error("Camera returned no profiles"));
+            return;
+          }
+
+          cam.getSnapshotUri({ profileToken: profiles[0].$.token }, function (err3, result) {
+            if (err3) {
+              reject(err3);
+              return;
+            }
+            if (!result || !result.uri) {
+              reject(new Error("No snapshot URI in camera response"));
+              return;
+            }
+            resolve(result.uri);
+          });
+        });
+      }
+    );
+  });
+}
+
+module.exports = { pollOnvifDevice, getSnapshotUri };

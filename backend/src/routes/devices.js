@@ -4,6 +4,8 @@ const { requireAuth } = require("../middleware/auth");
 const { scopeToOrg } = require("../middleware/tenantScope");
 const { requireRole } = require("../middleware/requireRole");
 const { encrypt } = require("../utils/crypto");
+const { getSnapshotUri } = require("../services/onvifPoller");
+const { decrypt } = require("../utils/crypto");
 
 const router = express.Router();
 
@@ -180,6 +182,41 @@ router.get("/:id/health", async function (req, res) {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch health logs", message: err.message });
+  }
+});
+// GET /devices/:id/snapshot — returns a live snapshot URL from the camera itself.
+// Note: this URL points directly at the camera's IP, so it only loads correctly
+// for a client on the same network as the camera (same constraint as ONVIF polling).
+router.get("/:id/snapshot", async function (req, res) {
+  try {
+    const result = await db.query(
+      `SELECT d.id, d.name, d.onvif_xaddr, d.username_enc, d.password_enc
+       FROM devices d JOIN sites s ON s.id = d.site_id
+       WHERE d.id = $1 AND s.org_id = $2`,
+      [req.params.id, req.orgId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    const device = result.rows[0];
+
+    if (!device.onvif_xaddr) {
+      return res.status(400).json({ error: "This device has no ONVIF connection configured" });
+    }
+
+    const decryptedDevice = {
+      ...device,
+      username_enc: decrypt(device.username_enc),
+      password_enc: decrypt(device.password_enc),
+    };
+
+    const uri = await getSnapshotUri(decryptedDevice);
+    res.json({ uri: uri });
+  } catch (err) {
+    console.error(err);
+    res.status(502).json({ error: "Failed to get snapshot from camera", message: err.message });
   }
 });
 
