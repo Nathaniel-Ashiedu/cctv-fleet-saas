@@ -129,7 +129,7 @@ function Dashboard() {
             {sites.length} site{sites.length === 1 ? "" : "s"} under management · plan: {plan}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="header-actions">
           <Link to="/alerts" className="btn btn-ghost" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
             Alerts
           </Link>
