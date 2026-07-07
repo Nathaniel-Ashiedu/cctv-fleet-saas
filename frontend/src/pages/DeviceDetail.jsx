@@ -25,6 +25,9 @@ function DeviceDetail() {
   const [editType, setEditType] = useState("camera");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [snapshotUrl, setSnapshotUrl] = useState(null);
+  const [snapshotError, setSnapshotError] = useState("");
+  const [loadingSnapshot, setLoadingSnapshot] = useState(false);
   const navigate = useNavigate();
 
   useEffect(function () {
@@ -105,6 +108,23 @@ function DeviceDetail() {
     }
   }
 
+async function handleFetchSnapshot() {
+    setLoadingSnapshot(true);
+    setSnapshotError("");
+    setSnapshotUrl(null);
+    try {
+      const response = await apiClient.get(`/devices/${deviceId}/snapshot`);
+      // NOTE: no cache-busting query param — this specific ONVIF simulator returns
+      // a 500 error on unexpected query strings. Real camera hardware may behave
+      // differently; this hasn't been tested against physical devices.
+      setSnapshotUrl(response.data.uri);
+    } catch (err) {
+      setSnapshotError(err.response?.data?.error || "Failed to load snapshot.");
+    } finally {
+      setLoadingSnapshot(false);
+    }
+  }
+
   if (loading) {
     return <div className="page"><p className="empty-state">Loading device...</p></div>;
   }
@@ -138,6 +158,29 @@ function DeviceDetail() {
         {device.ip_address} · {device.type}
         {device.last_seen_at && <> · last seen {new Date(device.last_seen_at).toLocaleString()}</>}
       </p>
+
+      <div className="panel">
+        <div className="card-row" style={{ marginBottom: snapshotUrl || snapshotError ? 16 : 0 }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Live snapshot</h3>
+            <p className="subtext" style={{ marginTop: 4 }}>
+              Only loads when viewed from the same network as the camera.
+            </p>
+          </div>
+          <button className="btn btn-ghost" onClick={handleFetchSnapshot} disabled={loadingSnapshot}>
+            {loadingSnapshot ? "Loading..." : "Refresh snapshot"}
+          </button>
+        </div>
+        {snapshotError && <p className="error-text">{snapshotError}</p>}
+        {snapshotUrl && (
+          <img
+            src={snapshotUrl}
+            alt="Live camera snapshot"
+            style={{ width: "100%", borderRadius: 8, display: "block" }}
+            onError={() => setSnapshotError("Image failed to load — camera may be unreachable from this network.")}
+          />
+        )}
+      </div>
 
       {editing && (
         <div className="panel">
