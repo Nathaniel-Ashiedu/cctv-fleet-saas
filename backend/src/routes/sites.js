@@ -17,6 +17,20 @@ router.post("/", requireRole("admin", "technician"), async function (req, res) {
   }
 
   try {
+    const orgResult = await db.query("SELECT plan FROM organizations WHERE id = $1", [req.orgId]);
+    const plan = orgResult.rows[0]?.plan || "free";
+
+    if (plan === "free") {
+      const countResult = await db.query("SELECT COUNT(*) FROM sites WHERE org_id = $1", [req.orgId]);
+      const siteCount = parseInt(countResult.rows[0].count, 10);
+      if (siteCount >= 1) {
+        return res.status(403).json({
+          error: "Free plan is limited to 1 site. Upgrade to Pro for unlimited sites.",
+          limitReached: true,
+        });
+      }
+    }
+
     const result = await db.query(
       "INSERT INTO sites (org_id, name, address) VALUES ($1, $2, $3) RETURNING id, name, address, created_at",
       [req.orgId, name, address || null]

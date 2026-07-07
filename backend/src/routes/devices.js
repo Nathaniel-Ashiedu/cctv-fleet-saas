@@ -28,6 +28,23 @@ router.post("/", requireRole("admin", "technician"), async function (req, res) {
       return res.status(404).json({ error: "Site not found" });
     }
 
+    const orgResult = await db.query("SELECT plan FROM organizations WHERE id = $1", [req.orgId]);
+    const plan = orgResult.rows[0]?.plan || "free";
+
+    if (plan === "free") {
+      const countResult = await db.query(
+        `SELECT COUNT(*) FROM devices d JOIN sites s ON s.id = d.site_id WHERE s.org_id = $1`,
+        [req.orgId]
+      );
+      const deviceCount = parseInt(countResult.rows[0].count, 10);
+      if (deviceCount >= 3) {
+        return res.status(403).json({
+          error: "Free plan is limited to 3 devices. Upgrade to Pro for unlimited devices.",
+          limitReached: true,
+        });
+      }
+    }
+
     const result = await db.query(
       `INSERT INTO devices (site_id, name, ip_address, type, onvif_xaddr, username_enc, password_enc, firmware_version)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
