@@ -8,6 +8,7 @@ const devicesRoutes = require("./routes/devices");
 const alertsRoutes = require("./routes/alerts");
 const billingRoutes = require("./routes/billing");
 const { requireAuth } = require("./middleware/auth");
+const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 
@@ -51,5 +52,8 @@ app.use("/alerts", alertsRoutes);
 app.get("/me", requireAuth, function (req, res) {
   res.json({ status: "ok", user: req.user });
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 module.exports = app;
