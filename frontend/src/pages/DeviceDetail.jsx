@@ -108,7 +108,7 @@ function DeviceDetail() {
     }
   }
 
-async function handleFetchSnapshot() {
+  async function handleFetchSnapshot() {
     setLoadingSnapshot(true);
     setSnapshotError("");
     setSnapshotUrl(null);
@@ -142,9 +142,9 @@ async function handleFetchSnapshot() {
     <div className="page">
       <Link to="/dashboard" className="back-link">← Back to sites</Link>
 
-      <div className="card-row" style={{ marginTop: 4 }}>
+      <div className="card-row detail-header" style={{ marginTop: 4 }}>
         <h1>{device.name}</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="detail-header-actions">
           <StatusBadge status={device.status} />
           <button className="btn btn-ghost" onClick={() => setEditing(!editing)}>
             {editing ? "Cancel" : "Edit"}

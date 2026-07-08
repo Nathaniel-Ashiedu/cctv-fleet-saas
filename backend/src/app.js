@@ -8,7 +8,6 @@ const devicesRoutes = require("./routes/devices");
 const alertsRoutes = require("./routes/alerts");
 const billingRoutes = require("./routes/billing");
 const { requireAuth } = require("./middleware/auth");
-const { scheduleHealthChecks } = require("./jobs/deviceHealthCheck");
 
 const app = express();
 
@@ -25,7 +24,6 @@ app.use(
   })
 );
 
-// Stripe webhook needs the RAW body, so it's mounted before express.json()
 app.use("/billing", billingRoutes);
 app.use(express.json());
 
@@ -54,8 +52,4 @@ app.get("/me", requireAuth, function (req, res) {
   res.json({ status: "ok", user: req.user });
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, async function () {
-  console.log("Backend running on http://localhost:" + PORT);
-  await scheduleHealthChecks();
-});
+module.exports = app;
