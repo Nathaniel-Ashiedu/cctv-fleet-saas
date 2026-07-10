@@ -2,6 +2,7 @@ const { Queue, Worker } = require("bullmq");
 const connection = require("../config/redis");
 const db = require("../config/db");
 const { pollOnvifDevice } = require("../services/onvifPoller");
+const { decrypt } = require("../utils/crypto");
 
 const QUEUE_NAME = "device-health-check";
 const healthCheckQueue = new Queue(QUEUE_NAME, { connection });
@@ -20,7 +21,12 @@ function simulateCheck() {
 
 async function checkDevice(device) {
   if (device.onvif_xaddr) {
-    return pollOnvifDevice(device);
+    const decryptedDevice = {
+      ...device,
+      username_enc: decrypt(device.username_enc),
+      password_enc: decrypt(device.password_enc),
+    };
+    return pollOnvifDevice(decryptedDevice);
   }
   return simulateCheck();
 }
